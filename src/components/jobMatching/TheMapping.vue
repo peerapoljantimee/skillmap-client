@@ -4,21 +4,33 @@
     <h1 class="fw-bold text-center mb-4" style="color: #2A2D65;">Skill Mapping</h1>
     
     <div class="row justify-content-center">
-      <!-- ส่วนด้านซ้าย (ตัวกรอง) -->
+      <!-- เเบบฟอร์มกรองข้อมูลจับคู่ทักษะ -->
       <div class="col-md-5">
         <div class="card p-4 mb-4">
           <h4 class="mb-3">เลือกหมวดหมู่และทักษะ</h4>
           
-          <!-- Dropdown สำหรับกรอง sub_category -->
-          <div class="mb-4">
-            <label class="form-label fw-bold">หมวดหมู่งานย่อย</label>
-            <Dropdown v-model="selectedCategory" :options="subCategories" optionLabel="name" 
-              placeholder="เลือกหมวดหมู่งานย่อย" class="w-100" />
+          <!-- Select สำหรับกรอง sub_category -->
+          <div class="mb-4 ">
+            <label class="form-label fw-bold">
+              <span v-if="searchJobsSubmitted && !selectedSubCategory" class="text-danger">หมวดหมู่งานย่อย (จำเป็นต้องเลือก)</span>
+              <span v-else>หมวดหมู่งานย่อย</span>
+            </label>
+            <Select v-model="selectedSubCategory" 
+              :options="subCategories" 
+              optionLabel="name" 
+              filter 
+              :loading="subCategoriesLoading" 
+              :invalid="searchJobsSubmitted && !selectedSubCategory"
+              placeholder="เลือกหมวดหมู่งานย่อย" class="w-100" 
+              />
           </div>
           
           <!-- MultiSelect สำหรับ Hard Skills -->
           <div class="mb-3">
-            <label class="form-label fw-bold">Hard Skills</label>
+            <label class="form-label fw-bold">
+              <span v-if="searchJobsSubmitted && selectedHardSkills.length === 0 && selectedSoftSkills.length === 0" class="text-danger">Hard Skills (จำเป็นต้องเลือก)</span>
+              <span v-else>Hard Skills</span>
+            </label>
               <MultiSelect v-model="selectedHardSkills" 
                 display="chip" 
                 :options="hardSkills" 
@@ -28,12 +40,17 @@
                 :maxSelectedLabels="3" 
                 class="w-100"
                 :virtualScrollerOptions="{ itemSize: 38 }"
-                :loading="hardSkillsLoading" />
+                :loading="hardSkillsLoading" 
+                :invalid="searchJobsSubmitted && selectedHardSkills.length === 0 && selectedSoftSkills.length === 0"
+                />
           </div>
           
           <!-- MultiSelect สำหรับ Soft Skills -->
           <div class="mb-3">
-            <label class="form-label fw-bold">Soft Skills</label>
+            <label class="form-label fw-bold">
+              <span v-if="searchJobsSubmitted && selectedHardSkills.length === 0 && selectedSoftSkills.length === 0" class="text-danger">Soft Skills (จำเป็นต้องเลือก)</span>
+              <span v-else>Soft Skills</span>
+            </label>
             <MultiSelect v-model="selectedSoftSkills" 
                 display="chip" 
                 :options="softSkills" 
@@ -43,7 +60,9 @@
                 :maxSelectedLabels="3" 
                 class="w-100"
                 :virtualScrollerOptions="{ itemSize: 38 }"
-                :loading="softSkillsLoading" />
+                :loading="softSkillsLoading"
+                :invalid="searchJobsSubmitted && selectedHardSkills.length === 0 && selectedSoftSkills.length === 0" 
+                />     
           </div>
           
           <div class="d-flex justify-content-end mt-3">
@@ -70,7 +89,7 @@
         </div>
       </div>
       
-      <!-- ส่วนด้านขวา (รายการงาน) -->
+      <!-- เเสดงประกาศรับสมัครงาน -->
       <div class="col-md-7">
         <div class="card p-3">
           <h4 class="mb-3">งานที่ตรงกับคุณสมบัติ {{ jobs.length }} รายการ</h4>
@@ -148,35 +167,33 @@
                 </Accordion>
               </div>
             </div>
-
-
           </div>
         </div>
       </div>
 
+      <!-- เเสดงเเจ้งเตือน -->
+      <Dialog v-model:visible="notificationDialog.visible" :style="{ width: '350px' }" :header="notificationDialog.header" :modal="true">
+        <div class="d-flex align-items-center">
+          <i :class="notificationDialog.icon" class="me-2" style="font-size: 1.5rem" />
+          <span>{{ notificationDialog.message }}</span>
+        </div>
+        <div class="d-flex justify-content-end mt-4">
+          <Button label="ตกลง" @click="closeNotification" autofocus />
+        </div>
+      </Dialog>
+
     </div>
-    
-   
   </div>
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue';
-import { FilterMatchMode } from "@primevue/core/api";
-// import DataTable from 'primevue/datatable';
-// import Column from 'primevue/column';
+import axios from 'axios';
+import { ref, onMounted ,reactive} from 'vue';
 import Button from 'primevue/button';
 import MultiSelect from 'primevue/multiselect';
-import Dropdown from 'primevue/dropdown';
-import SelectButton from 'primevue/selectbutton';
-import InputText from 'primevue/inputtext';
-import Badge from 'primevue/badge';
+import Select from 'primevue/select';
 import Chip from 'primevue/chip';
-import IconField from "primevue/iconfield";
-import InputIcon from "primevue/inputicon";
-// import Dialog from 'primevue/dialog';
-import Tag from 'primevue/tag';
-import axios from 'axios';
+import Dialog from 'primevue/dialog';
 import Accordion from 'primevue/accordion';
 import AccordionPanel from 'primevue/accordionpanel';
 import AccordionHeader from 'primevue/accordionheader';
@@ -185,19 +202,11 @@ import AccordionContent from 'primevue/accordioncontent';
 export default {
   name: 'TheMapping',
   components: {
-    // DataTable,
-    // Column,
     Button,
     MultiSelect,
-    Dropdown,
-    SelectButton,
-    InputText,
-    Badge,
+    Select,
     Chip,
-    IconField,
-    InputIcon,
-    // Dialog,
-    Tag,
+    Dialog,
     Accordion,
     AccordionPanel,
     AccordionHeader,
@@ -206,23 +215,9 @@ export default {
   setup() {
     // ข้อมูลหมวดหมู่ย่อย (Sub-categories)
     const subCategories = ref([]);
-    const selectedCategory = ref(null);
+    const selectedSubCategory = ref(null);
+    const subCategoriesLoading = ref(false);
     
-    // ฟังก์ชันดึงข้อมูลหมวดหมู่ย่อยจาก API
-    const fetchSubCategories = async () => {
-      try {
-        const response = await axios.get('http://127.0.0.1:8000/subcategory');
-        if (response.data && response.data.data) {
-          // แปลงข้อมูลให้ตรงกับรูปแบบที่ต้องการ
-          subCategories.value = response.data.data.map(item => ({
-            name: item.name,
-            code: item.sub_category_id.toString()
-          }));
-        }
-      } catch (error) {
-        console.error('ไม่สามารถดึงข้อมูลหมวดหมู่ย่อยได้:', error);
-      }
-    };
     // ข้อมูลทักษะ (Hard Skills)
     const hardSkills = ref([]);
     const hardSkillsLoading = ref(false);
@@ -236,13 +231,42 @@ export default {
     
     // ข้อมูลรายการงาน
     const jobs = ref([]);
+    const searchJobsSubmitted = ref(false);
     
     // ตัวแปรสำหรับแสดงรายละเอียดงาน
     const jobDetailDialog = ref(false);
     const selectedJob = ref(null);
+
+    // ตัวเเปรสำหรับเเสดงเเจ้งเตือน
+    const notificationDialog = reactive({
+      visible: false,
+      header: '',
+      message: '',
+      icon: '',
+      callback: null // ฟังก์ชันที่จะเรียกหลังจากปิด notification
+    });
+
+    // ฟังก์ชันดึงข้อมูลหมวดหมู่ย่อยจาก API
+    const fetchSubCategories = async () => {
+      subCategoriesLoading.value = true;
+      try {       
+        const response = await axios.get('http://127.0.0.1:8000/subcategory');
+        if (response.data && response.data.status === "success" && response.data.data) {
+          // แปลงข้อมูลให้ตรงกับรูปแบบที่ต้องการ
+          subCategories.value = response.data.data.map(item => ({
+            name: item.name,
+            code: item.sub_category_id.toString()
+          }));
+        }
+      } catch (error) {
+        console.error('ไม่สามารถดึงข้อมูลหมวดหมู่ย่อยได้:', error);
+      } finally {
+        subCategoriesLoading.value = false;
+      }
+    };
     
     // ฟังก์ชันดึงข้อมูล Hard Skills จาก API
-    const fetchHardSkills = async () => {
+    const fetchHardSkills = async () => { 
       hardSkillsLoading.value = true;
       try {
         const response = await axios.get('http://127.0.0.1:8000/mapping/hard_skills');
@@ -279,21 +303,12 @@ export default {
       }
     };
     
-    // ตัวกรองข้อมูล
-    const filters = ref({
-      global: { value: null, matchMode: FilterMatchMode.CONTAINS }
-    });
-    
     // ฟังก์ชันค้นหางาน
     const searchJobs = async () => {
+      searchJobsSubmitted.value = true;
       // ตรวจสอบเงื่อนไขก่อนการค้นหา: ต้องเลือกหมวดหมู่งานและมีทักษะอย่างน้อย 1 สกิล
-      if (!selectedCategory.value) {
-        alert('กรุณาเลือกหมวดหมู่งานย่อย');
-        return;
-      }
-      
-      if (selectedHardSkills.value.length === 0 && selectedSoftSkills.value.length === 0) {
-        alert('กรุณาเลือกทักษะอย่างน้อย 1 ทักษะ (Hard Skills หรือ Soft Skills)');
+      if (!selectedSubCategory.value || (selectedHardSkills.value.length === 0 && selectedSoftSkills.value.length === 0)) {
+        showNotification('error', 'แจ้งเตือน', 'กรุณากรอกข้อมูลให้ครบ');
         return;
       }
       
@@ -303,7 +318,7 @@ export default {
         
         // เตรียมพารามิเตอร์สำหรับส่งไปยัง API
         const params = {
-          sub_category_id: selectedCategory.value.code,
+          sub_category_id: selectedSubCategory.value.code,
           hard_skills: selectedHardSkills.value.map(skill => skill.name),
           soft_skills: selectedSoftSkills.value.map(skill => skill.name)
         };
@@ -346,27 +361,10 @@ export default {
       jobDetailDialog.value = true;
     };
     
-    // ฟังก์ชันเปิดลิงก์งาน
-    const openJobLink = (job) => {
-      if (job.share_link) {
-        window.open(job.share_link, '_blank');
-      }
-    };
-    
     // ฟังก์ชันจัดรูปแบบเงินเดือน
     const formatSalary = (value) => {
       if (value === null || value === undefined) return '';
       return new Intl.NumberFormat('th-TH').format(value);
-    };
-    
-    // ฟังก์ชันรวมข้อมูลสถานที่
-    const getLocationString = (job) => {
-      const parts = [];
-      if (job.area) parts.push(job.area);
-      if (job.city) parts.push(job.city);
-      if (job.country) parts.push(job.country);
-      
-      return parts.join(', ') || 'ไม่ระบุ';
     };
     
     // ฟังก์ชันจัดรูปแบบเนื้อหางาน
@@ -396,56 +394,42 @@ export default {
       
       return html;
     };
-    
-    // ฟังก์ชันแสดง Hard Skills ที่ตรงกับที่เลือก
-    const getMatchedHardSkills = (job) => {
-      if (!job.hard_skills || !selectedHardSkills.value.length) return [];
+
+    // แสดงเเเจ้งเตือน
+    const showNotification = (type, header, message, callback = null) => {
+      notificationDialog.visible = true;
+      notificationDialog.header = header;
+      notificationDialog.message = message;
+      notificationDialog.callback = callback;
       
-      const selectedSkillNames = selectedHardSkills.value.map(skill => skill.name.toLowerCase());
-      return job.hard_skills
-        .filter(skill => selectedSkillNames.includes(skill.toLowerCase()))
-        .slice(0, 3); // แสดงเฉพาะ 3 อันแรก
+      // กำหนด icon ตาม type
+      switch (type) {
+        case 'success':
+          notificationDialog.icon = 'pi pi-check-circle text-success';
+          break;
+        case 'error':
+          notificationDialog.icon = 'pi pi-times-circle text-danger';
+          break;
+        case 'warning':
+          notificationDialog.icon = 'pi pi-exclamation-triangle text-warning';
+          break;
+        case 'info':
+          notificationDialog.icon = 'pi pi-info-circle text-info';
+          break;
+        default:
+          notificationDialog.icon = 'pi pi-info-circle';
+      }
+    };
+
+    // ปิดเเเจ้งเตือน
+    const closeNotification = () => {
+      notificationDialog.visible = false;
+      if (typeof notificationDialog.callback === 'function') {
+        notificationDialog.callback();
+      }
     };
     
-    // ฟังก์ชันแสดง Soft Skills ที่ตรงกับที่เลือก
-    const getMatchedSoftSkills = (job) => {
-      if (!job.soft_skills || !selectedSoftSkills.value.length) return [];
-      
-      const selectedSkillNames = selectedSoftSkills.value.map(skill => skill.name.toLowerCase());
-      return job.soft_skills
-        .filter(skill => selectedSkillNames.includes(skill.toLowerCase()))
-        .slice(0, 3); // แสดงเฉพาะ 3 อันแรก
-    };
-    
-    // ส่งออกไฟล์ CSV
-    const exportCSV = () => {
-      // สร้างข้อมูล CSV
-      let csv = 'ตำแหน่งงาน,บริษัท,สถานที่,เงินเดือน,ประเภท,คะแนน,ลิงก์\n';
-      
-      jobs.value.forEach(job => {
-        const salary = (job.min_salary && job.max_salary) 
-                      ? `${formatSalary(job.min_salary)}-${formatSalary(job.max_salary)} ${job.currency || ''}`
-                      : 'ไม่ระบุ';
-        
-        const location = getLocationString(job);
-        
-        csv += `"${job.title}","${job.company_name}","${location}","${salary}","${job.type || 'ไม่ระบุ'}","${job.bm25_score || '0'}","${job.share_link || ''}"\n`;
-      });
-      
-      // สร้าง Blob และดาวน์โหลด
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', 'job_results.csv');
-      link.style.visibility = 'hidden';
-      
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    };
-    
+    // เรียกฟังก์ชันหลังจากคอมโพเนนต์โหลดเสร็จ
     onMounted(() => {
       fetchSubCategories();
       fetchHardSkills();
@@ -453,9 +437,12 @@ export default {
     });
     
     return {
+
+      // ตัวเเปรพารามิเตอร์
       searchLoading,
       subCategories,
-      selectedCategory,
+      selectedSubCategory,
+      subCategoriesLoading,
       hardSkills,
       softSkills,
       selectedHardSkills,
@@ -463,20 +450,21 @@ export default {
       hardSkillsLoading,
       softSkillsLoading, 
       jobs,
-      filters,
+      searchJobsSubmitted,
       jobDetailDialog,
       selectedJob,
+      notificationDialog,
+      
+      // ฟังก์ชั่น
       searchJobs,
       removeHardSkill,
       removeSoftSkill,
       viewJobDetails,
-      openJobLink,
       formatSalary,
-      getLocationString,
       formatJobContent,
-      getMatchedHardSkills,
-      getMatchedSoftSkills,
-      exportCSV
+      showNotification,
+      closeNotification
+
     };
   }
 }
