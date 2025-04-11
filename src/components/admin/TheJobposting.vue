@@ -2,6 +2,7 @@
 <template>
   <div class="container-fluid">
     <div class="row flex-nowrap">
+      <!-- Sidebar -->
       <div class="col-auto col-md-3 col-xl-2 px-sm-2 px-0">
         <TheSidebar />
       </div>
@@ -9,26 +10,26 @@
       <div class="col py-3">
         <h1 class="fw-bold h1 mb-4" style="color: #2A2D65;">เเสดงประกาศรับสมัครงาน</h1>
         
+        <!-- Jobposting DataTable -->
         <div class="card">
           <div class="card-body">
+            <!-- Header -->
             <div class="d-flex justify-content-between mb-3">
               <!-- ส่วนค้นหา -->
               <div class="d-flex align-items-center">
                 <span class="p-input-icon-left me-3">
-                  <!-- <InputText v-model="filters.global.value" placeholder="ค้นหา" class="p-inputtext-sm" /> -->
                   <IconField>
                      <InputIcon class="pi pi-search" />
                      <InputText v-model="filters.global.value" placeholder="ค้นหา" class="p-inputtext-sm" />
                   </IconField>
                 </span>
-                <!-- <Dropdown v-model="statusFilter" :options="statusOptions" optionLabel="name" placeholder="สถานะ" class="me-2" />
-                <Dropdown v-model="typeFilter" :options="typeOptions" optionLabel="name" placeholder="ประเภทงาน" /> -->
               </div>
-              <!-- ปุ่มส่งออก/เพิ่มงาน -->
-              <!-- <div>
-                <Button icon="pi pi-plus" label="เพิ่มประกาศ" class="p-button-success me-2" />
-                <Button icon="pi pi-file-excel" label="ส่งออก Excel" class="p-button-outlined" />
-              </div> -->
+              <!-- ปุ่มย้ายไปหน้าเพิ่มประกาศรับสมัครงาน -->
+              <div>
+                <router-link to="/admin/add-jobposting">
+                    <Button icon="pi pi-plus" label="เพิ่มประกาศ" class="p-button-success me-2" />
+                </router-link>
+              </div>
             </div>
             
             <!-- DataTable แสดงรายการประกาศงาน -->
@@ -36,7 +37,7 @@
               :value="jobs" 
               v-model:filters="filters"
               filterDisplay="menu" 
-              :loading="loading"
+              :loading="jobsLoading"
               :paginator="true" 
               :rows="10"
               :rowsPerPageOptions="[5, 10, 25, 50, 100]"
@@ -46,7 +47,7 @@
               dataKey="job_id"
               stripedRows
               sortMode="multiple"
-              :globalFilterFields="['title', 'company_name', 'city', 'type']"
+              :globalFilterFields="['job_id', 'title', 'sub_category_name', 'city', 'type', 'status', 'source_type']"
             >
               <!-- คอลัมน์ ID -->
               <Column field="job_id" header="รหัส" sortable style="min-width: 5rem"></Column>
@@ -59,9 +60,6 @@
                     <span class="small">{{ slotProps.data.company_name }}</span>
                   </div>
                 </template>
-                <!-- <template #filter="{ filterModel, filterCallback }">
-                  <InputText v-model="filterModel.value" @input="filterCallback()" placeholder="ค้นหาตำแหน่ง" class="p-column-filter" />
-                </template> -->
               </Column>
               
               <!-- คอลัมน์หมวดหมู่ -->
@@ -152,19 +150,23 @@
                 </template>
               </Column>
               
-              <!-- สถานะการโหลด/ไม่มีข้อมูล -->
+              <!-- แสดงเมื่อไม่พบข้อมูล -->
               <template #empty>
                 <div class="text-center py-5">
                   <div class="mb-3"><i class="pi pi-inbox" style="font-size: 2rem"></i></div>
                   <div>ไม่พบข้อมูลประกาศรับสมัครงาน</div>
                 </div>
               </template>
+
+              <!-- แสดงสถานะกำลังโหลด -->
               <template #loading>
                 <div class="text-center py-5">
                   <div class="mb-3"><i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i></div>
                   <div>กำลังโหลดข้อมูล...</div>
                 </div>
+       
               </template>
+
             </DataTable>
           </div>
         </div>
@@ -284,7 +286,6 @@ import InputText from 'primevue/inputtext';
 import Dialog from 'primevue/dialog';
 import Tag from 'primevue/tag';
 import Chip from 'primevue/chip';
-import Dropdown from 'primevue/dropdown';
 import axios from 'axios';
 import { FilterMatchMode } from "@primevue/core/api";
 import IconField from 'primevue/iconfield';
@@ -301,53 +302,34 @@ export default {
     Dialog,
     Tag,
     Chip,
-    Dropdown,
     IconField,
     InputIcon
   },
   setup() {
     const jobs = ref([]);
-    const loading = ref(false);
+    const jobsLoading = ref(false);
+    
     const jobDetailVisible = ref(false);
     const selectedJob = ref(null);
     
     // ตัวกรอง
-    const filters = reactive({
+    const filters = ref({
       global: { value: null, matchMode: FilterMatchMode.CONTAINS }
     });
     
-    const statusFilter = ref(null);
-    const typeFilter = ref(null);
-    
-    // ตัวเลือกสำหรับ dropdown
-    const statusOptions = ref([
-      { name: 'ทั้งหมด', value: null },
-      { name: 'เปิดรับสมัคร', value: 'Active' },
-      { name: 'ปิดรับสมัคร', value: 'Inactive' },
-      { name: 'รอการอนุมัติ', value: 'Pending' }
-    ]);
-    
-    const typeOptions = ref([
-      { name: 'ทั้งหมด', value: null },
-      { name: 'งานประจำ', value: 'Full time' },
-      { name: 'งานพาร์ทไทม์', value: 'Part time' },
-      { name: 'งานชั่วคราว', value: 'Contract' },
-      { name: 'ฝึกงาน', value: 'Internship' }
-    ]);
-    
     // ฟังก์ชันดึงข้อมูลประกาศงาน
     const fetchJobs = async () => {
-      loading.value = true;
+      jobsLoading.value = true;
       try {
         const response = await axios.get('http://127.0.0.1:8000/jobs/jobsposting');
-        if (response.data && response.data.data) {
+        if (response.data && response.data.status === "success" &&response.data.data) {
           jobs.value = response.data.data;
           console.log('Jobs loaded:', jobs.value);
         }
       } catch (error) {
         console.error('Error loading jobs:', error);
       } finally {
-        loading.value = false;
+        jobsLoading.value = false;
       }
     };
     
@@ -436,19 +418,19 @@ export default {
     });
     
     return {
+
+      // ตัวเเปรพารามิเตอร์
       jobs,
-      loading,
+      jobsLoading,
       filters,
-      statusOptions,
-      typeOptions,
-      statusFilter,
-      typeFilter,
+      jobDetailVisible,
+      selectedJob,
+
+      // ฟังก์ชั่น
       formatSalary,
       getStatusSeverity,
       getTypeSeverity,
       getSourceTypeLabel,
-      jobDetailVisible,
-      selectedJob,
       openJobDetail,
       parseSkills,
       formatJobContent
@@ -458,6 +440,12 @@ export default {
 </script>
 
 <style scoped>
+.card {
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background-color: white;
+}
+
 /* สไตล์สำหรับเนื้อหาประกาศงาน */
 .job-content {
   line-height: 1.6;
