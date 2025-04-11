@@ -493,80 +493,86 @@ export default {
       return html;
     };
 
-  const extractskills = async () => {
-    if (!selectedJobpostings.value || selectedJobpostings.value.length === 0) {
-      showNotification('warning', 'ไม่มีการเลือกประกาศงาน', 'กรุณาเลือกประกาศงานที่ต้องการสกัดทักษะก่อน');
-      return;
-    }
+    const extractskills = async () => {
+      if (!selectedJobpostings.value || selectedJobpostings.value.length === 0) {
+        showNotification('warning', 'เเจ้งเตือน', 'กรุณาเลือกประกาศงานที่ต้องการสกัดทักษะก่อน');
+        return;
+      }
 
-    const initialFormData = { data: selectedJobpostings.value };
-    console.log('Selected job postings:', initialFormData);
-    
-    try {
-      showNotification('info', 'โปรดรอสักครู่', 'กำลังประมวลผลสกัดทักษะเเละบันทึกข้อมูล...');
+      const initialFormData = { data: selectedJobpostings.value };
+      console.log('Selected job postings:', initialFormData);
       
-      // เรียก API แรกเพื่อสกัดทักษะ
-      const extractResponse = await axios.post('http://127.0.0.1:8000/extractskills', initialFormData);
+      try {
+        showNotification('info', 'โปรดรอสักครู่', 'กำลังประมวลผลสกัดทักษะเเละบันทึกข้อมูล...');
+        
+        // เรียก API แรกเพื่อสกัดทักษะ
+        const extractResponse = await axios.post('http://127.0.0.1:8000/extractskills', initialFormData);
 
-      if (extractResponse.data.status === 'success') {
-        console.log('extractskills response:', extractResponse.data.data);
-        
-        // เตรียมข้อมูลสำหรับ API ที่สอง
-        const skillsFormData = { data: extractResponse.data.data };
-        
-        // เรียก API ที่สองเพื่อบันทึกทักษะ
-        const insertResponse = await axios.post('http://127.0.0.1:8000/extractskills/jobs/insert_skills', skillsFormData);
-        
-        if (insertResponse.data.status === 'success') {
-          // เคลียร์การเลือกและรีเฟรชข้อมูล
-          selectedJobpostings.value = null;
-          fetchJobs();
+        if (extractResponse.data.status === 'success') {
+          console.log('extractskills response:', extractResponse.data.data);
           
-          // เตรียมข้อมูลสำหรับการแสดงผล
-          const successCount = insertResponse.data.data.length;
-          const errorCount = insertResponse.data.error_job_ids.length;
+          // เตรียมข้อมูลสำหรับ API ที่สอง
+          const skillsFormData = { data: extractResponse.data.data };
           
-          // แสดง job_id ที่สำเร็จในรูปแบบสตริง
-          const successIds = insertResponse.data.data.join(', ');
+          // เรียก API ที่สองเพื่อบันทึกทักษะ
+          const insertResponse = await axios.post('http://127.0.0.1:8000/extractskills/jobs/insert_skills', skillsFormData);
           
-          if (errorCount > 0) {
-            // แสดง job_id ที่ล้มเหลวในรูปแบบสตริง
-            let errorIds = '';
-            if (typeof insertResponse.data.error_job_ids[0] === 'object') {
-              // กรณีที่เป็นอ็อบเจ็กต์ที่มี job_id และ error
-              errorIds = insertResponse.data.error_job_ids.map(item => item.job_id).join(', ');
-            } else {
-              // กรณีที่เป็นแค่ค่า job_id โดยตรง
-              errorIds = insertResponse.data.error_job_ids.join(', ');
+          if (insertResponse.data.status === 'success') {
+            // เคลียร์การเลือกและรีเฟรชข้อมูล
+            selectedJobpostings.value = null;
+            fetchJobs();
+            
+            // เตรียมข้อมูลสำหรับการแสดงผล
+            const successResults = insertResponse.data.data;
+            const successCount = successResults.length;
+            const errorResults = insertResponse.data.error_job_ids;
+            const errorCount = errorResults.length;
+            
+            // แสดง job_id ที่สำเร็จและล้มเหลวในรูปแบบสตริง
+            const successIds = successResults.length > 0 ? successResults.map(item => item.job_id).join(', ') : "ไม่มี";
+            const errorIds = errorResults.length > 0 ? errorResults.map(item => item.job_id).join(', ') : "ไม่มี";
+            
+            let notificationType = 'success';
+            let title = 'สำเร็จ';
+            
+            if (errorCount > 0 && successCount === 0) {
+              notificationType = 'error';
+              title = 'ล้มเหลว';
+            } else if (errorCount > 0) {
+              notificationType = 'warning';
+              title = 'เสร็จสิ้นบางส่วน';
             }
             
-            console.warn('มีงานบางรายการที่ไม่สามารถบันทึกได้:', insertResponse.data.error_job_ids);
-            showNotification('warning', 'เสร็จสิ้นพร้อมคำเตือน', 
-              `สกัดทักษะสำเร็จ ${successCount} งาน (ID: ${successIds})
-              แต่มี ${errorCount} งานที่ไม่สามารถบันทึกได้ (ID: ${errorIds})`);
+            const message = `ผลการสกัดทักษะจากประกาศงานที่เลือก:
+            - สำเร็จ: ${successCount} งาน (ID: ${successIds})
+            - ล้มเหลว: ${errorCount} งาน (ID: ${errorIds})
+            ${errorCount > 0 ? "สาเหตุ: ไม่พบทักษะจากการสกัด" : ""}`;
+            
+            showNotification(notificationType, title, message);
+            
+            // แสดงรายละเอียดเพิ่มเติมสำหรับการแก้ไขปัญหา
+            console.log('รายละเอียดงานที่สำเร็จ:', successResults);
+            if (errorCount > 0) {
+              console.log('รายละเอียดข้อผิดพลาด:', errorResults.map(item => `${item.job_id}: ${item.error}`));
+            }
           } else {
-            showNotification('success', 'สำเร็จ', 
-              `สกัดทักษะและบันทึกข้อมูลเรียบร้อยแล้ว จำนวน ${successCount} งาน 
-              ID ที่สำเร็จ: ${successIds}`);
+            showNotification('error', 'เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกทักษะได้ กรุณาลองใหม่อีกครั้ง');
+            console.error('Error response from insert_skills:', insertResponse.data);
           }
         } else {
-          showNotification('error', 'เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกทักษะได้ กรุณาลองใหม่อีกครั้ง');
-          console.error('Error response from insert_skills:', insertResponse.data);
+          showNotification('error', 'เกิดข้อผิดพลาด', 'ไม่สามารถสกัดทักษะได้ กรุณาลองใหม่อีกครั้ง');
+          console.error('Error response from extractskills:', extractResponse.data);
         }
-      } else {
-        showNotification('error', 'เกิดข้อผิดพลาด', 'ไม่สามารถสกัดทักษะได้ กรุณาลองใหม่อีกครั้ง');
-        console.error('Error response from extractskills:', extractResponse.data);
+      } catch (error) {
+        showNotification('error', 'เกิดข้อผิดพลาด', `การเชื่อมต่อล้มเหลว: ${error.message}`);
+        console.error('Exception during API calls:', error);
       }
-    } catch (error) {
-      showNotification('error', 'เกิดข้อผิดพลาด', `การเชื่อมต่อล้มเหลว: ${error.message}`);
-      console.error('Exception during API calls:', error);
-    }
-  };
+    };
 
     // ซ่อนไดอะล็อก
-    const hideDialog = () => {
-      companyDialog.value = false;
-    };
+    // const hideDialog = () => {
+    //   companyDialog.value = false;
+    // };
     
     onMounted(() => {
       fetchJobs();
