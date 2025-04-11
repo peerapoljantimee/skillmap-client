@@ -6,14 +6,9 @@
       <div class="col-auto col-md-3 col-xl-2 px-sm-2 px-0">
         <TheSidebar />
       </div>
-      <!-- Main Content -->
+      <!-- ส่วนของเนื้อหา -->
       <div class="col py-3">
         <h1 class="fw-bold h1 mb-4" style="color: #2a2d65">จัดการข้อมูลบริษัท</h1>
-
-        <!-- Button to open Add Company Dialog -->
-        <div class="mb-4">
-          <Button label="เพิ่มบริษัทใหม่" icon="pi pi-plus" @click="openNewCompany" class="p-button-success" />
-        </div>
 
         <!-- Company DataTable -->
         <div class="card">
@@ -28,32 +23,31 @@
                      <InputText v-model="filters.global.value" placeholder="ค้นหา" class="p-inputtext-sm" />
                   </IconField>
                 </span>
-                <!-- <Dropdown v-model="industryFilter" :options="industries" optionLabel="industry" placeholder="อุตสาหกรรม" class="me-2" /> -->
               </div>
-              <!-- ปุ่มส่งออก Excel (ถ้าต้องการ) -->
-              <!-- <div>
-                <Button icon="pi pi-file-excel" label="ส่งออก Excel" class="p-button-outlined" />
-              </div> -->
+              <!-- ปุ่มเปิดหน้าเพิ่มบริษัทใหม่ Add Company Dialog -->
+              <div class="mb-4">
+                <Button label="เพิ่มบริษัทใหม่" icon="pi pi-plus" @click="openNewCompany" class="p-button-success" />
+              </div>
             </div>
             
-            <!-- DataTable -->
+            <!-- DataTable เเสดงรายการบริษัท -->
             <DataTable 
-              :value="companies" 
+              :value="company" 
               :paginator="true" 
               :rows="10"
               :rowsPerPageOptions="[5, 10, 25, 50, 100]"
               dataKey="company_id"
               :filters="filters"
               filterDisplay="menu"
-              loading-icon="pi pi-spin pi-spinner"
-              :loading="loading"
+              :loading="companyLoading"
               responsiveLayout="scroll"
               paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
               currentPageReportTemplate="แสดง {first} ถึง {last} จากทั้งหมด {totalRecords} รายการ"              
               stripedRows
               sortMode="multiple"
               :globalFilterFields="['company_id', 'name', 'industry', 'company_size']"
-              >
+            >
+              <!-- คอลัมน์ ID -->
               <Column field="company_id" header="รหัส" sortable style="min-width: 5rem"></Column>
               <Column field="name" header="บริษัท" sortable style="min-width: 14rem">
                 <template #body="slotProps">
@@ -62,44 +56,23 @@
                     <span class="small" v-if="slotProps.data.short_name">{{ slotProps.data.short_name }}</span>
                   </div>
                 </template>
-                <!-- <template #filter="{ filterModel, filterCallback }">
-                  <InputText v-model="filterModel.value" @input="filterCallback()" placeholder="ค้นหาบริษัท" class="p-column-filter" />
-                </template> -->
               </Column>
+
+              <!-- คอลัมน์หมวดหมู่อุตสาหกรรม -->
               <Column field="industry" header="อุตสาหกรรม" sortable style="min-width: 12rem">
                <template #body="slotProps">
                   <span>{{ slotProps.data.industry || 'N/A' }}</span>
                </template>
-                <!-- <template #filter="{ filterModel, filterCallback }">
-                  <Dropdown 
-                    v-model="filterModel.value"
-                    :options="industries"
-                    optionLabel="industry"
-                    optionValue="industry"
-                    placeholder="ทั้งหมด"
-                    @change="filterCallback()"
-                    class="p-column-filter"
-                    showClear
-                  />
-                </template> -->
               </Column>
+
+              <!-- คอลัมน์จำเเนกขนาดบริษัท -->
               <Column field="company_size" header="ขนาดบริษัท" sortable style="min-width: 12rem">
                <template #body="slotProps">
                   <span>{{ slotProps.data.company_size || 'N/A' }}</span>
                </template>
-               <!-- <template #filter="{ filterModel, filterCallback }">
-                  <Dropdown 
-                     v-model="filterModel.value"
-                     :options="companySizes"
-                     optionLabel="company_size"
-                     optionValue="company_size"
-                     placeholder="ทั้งหมด"
-                     @change="filterCallback()"
-                     class="p-column-filter"
-                     showClear
-                  />
-               </template> -->
               </Column>
+
+              <!-- คอลั้มจำนวนงานที่เปิดรับสมัคร -->
               <Column field="count_jobs" header="จำนวนงาน" sortable style="min-width: 12rem"></Column>
               <Column field="verified" header="สถานะ" sortable style="min-width: 8rem">
                 <template #body="slotProps">
@@ -108,13 +81,15 @@
                 </template>
               </Column>
               
-              <!-- สถานะการโหลด/ไม่มีข้อมูล -->
+              <!-- แสดงเมื่อไม่พบข้อมูล -->
               <template #empty>
                 <div class="text-center py-5">
                   <div class="mb-3"><i class="pi pi-inbox" style="font-size: 2rem"></i></div>
                   <div>ไม่พบข้อมูลบริษัท</div>
                 </div>
               </template>
+
+              <!-- แสดงสถานะกำลังโหลด -->
               <template #loading>
                 <div class="text-center py-5">
                   <div class="mb-3"><i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i></div>
@@ -125,21 +100,22 @@
           </div>
         </div>
 
-        <!-- Add/Edit Company Dialog -->
-        <Dialog v-model:visible="companyDialog" :style="{width: '600px'}" header="รายละเอียดบริษัท" :modal="true" class="p-fluid">
-          <!-- <Toast /> -->
-          
-          <Form v-slot="$form" :initialValues="initialValues" :resolver="resolver" @submit="onFormSubmit">
+        <!-- เพื่มรายละเอียดบริษัท Company Dialog -->
+        <Dialog v-model:visible="companyDialog" :style="{width: '600px'}" header="รายละเอียดบริษัท" :modal="true" class="p-fluid">     
+          <Form @submit="insertCompany">
             <div class="row mb-3">
               <div class="field mb-3">
                 <div class="row align-items-center">
                   <div class="col-sm-3">
                     <div class="d-flex align-items-center justify-content-between">
-                      <label for="name">ชื่อบริษัท <span class="text-danger">*</span></label>
+                      <label class="form-label fw-bold">
+                        <span v-if="insertCompanySubmitted && !initialValues.name" class="text-danger">ชื่อบริษัท (จำเป็นต้องระบุ)</span>
+                        <span v-else>ชื่อบริษัท <span class="text-danger">*</span></span>
+                      </label>
                     </div>
                   </div>
                   <div class="col-sm-9">
-                    <InputText name="name" id="name" class="w-100" :class="{'p-invalid': $form.name?.invalid && $form.name?.dirty}" />
+                    <InputText v-model="initialValues.name" class="w-100" :invalid="insertCompanySubmitted && !initialValues.name" placeholder="ระบุชื่อของบริษัท"/>
                   </div>
                 </div>
               </div>
@@ -147,10 +123,10 @@
               <div class="field mb-3">
                 <div class="row align-items-center">
                   <div class="col-sm-3">
-                    <label for="short_name">ชื่อย่อ</label>
+                    <label class="form-label fw-bold" for="short_name">ชื่อย่อ</label>
                   </div>
                   <div class="col-sm-9">
-                    <InputText name="short_name" id="short_name" class="w-100" />
+                    <InputText v-model="initialValues.short_name" name="short_name" class="w-100" placeholder="ระบุอักษรชื่อย่อของบริษัท" />
                   </div>
                 </div>
               </div>
@@ -158,33 +134,19 @@
               <div class="field mb-3">
                 <div class="row align-items-center">
                   <div class="col-sm-3">
-                    <label for="industry">อุตสาหกรรม</label>
+                    <label class="form-label fw-bold" for="industry">อุตสาหกรรม</label>
                   </div>
                   <div class="col-sm-9"> 
-                    <Select  
+                    <Select
+                      v-model="initialValues.industry"  
                       name="industry"
-                      id="industry"
                       :options="industries"
+                      optionLabel="name"
                       placeholder="เลือกอุตสาหกรรม"
                       filter
-                      optionLabel="industry"
+                      :loading="industriesLoading" 
                       class="w-100"
-                    >
-                      <template #value="slotProps">
-                        <div v-if="slotProps.value" class="flex items-center">
-                          <div>{{ slotProps.value.industry !== null ? slotProps.value.industry : 'N/A' }}</div>
-                        </div>
-                        <span v-else>
-                          {{ slotProps.placeholder }}
-                        </span>
-                      </template>
-
-                      <template #option="slotProps">
-                        <div class="flex items-center">
-                          <div>{{ slotProps.option.industry !== null ? slotProps.option.industry : 'N/A' }}</div>
-                        </div>
-                      </template>
-                    </Select>
+                    />
                   </div>
                 </div>
               </div>
@@ -192,32 +154,19 @@
               <div class="field mb-3">
                 <div class="row align-items-center">
                   <div class="col-sm-3">
-                    <label for="company_size">ขนาดบริษัท</label>
+                    <label class="form-label fw-bold" for="company_size">ขนาดบริษัท</label>
                   </div>
                   <div class="col-sm-9">   
-                    <Select 
+                    <Select
+                      v-model="initialValues.company_size"   
                       name="company_size"
-                      id="company_size"
                       :options="companySizes"
-                      placeholder="เลือกขนาดบริษัท"          
-                      optionLabel="company_size"
-                      class="w-100"
-                    >
-                      <template #value="slotProps">
-                        <div v-if="slotProps.value" class="flex items-center">
-                          <div>{{ slotProps.value.company_size !== null ? slotProps.value.company_size : 'N/A' }}</div>
-                        </div>
-                        <span v-else>
-                          {{ slotProps.placeholder }}
-                        </span>
-                      </template>
+                      optionLabel="name"
+                      placeholder="เลือกขนาดบริษัท"
+                      :loading="companySizesLoading"           
                       
-                      <template #option="slotProps">
-                        <div class="flex items-center">
-                          <div>{{ slotProps.option.company_size !== null ? slotProps.option.company_size : 'N/A' }}</div>
-                        </div>
-                      </template>
-                    </Select>
+                      class="w-100"
+                    />
                   </div>
                 </div>
               </div>
@@ -225,27 +174,15 @@
               <div class="field mb-3">
                 <div class="row align-items-center">
                   <div class="col-sm-3">
-                    <label for="company_search_url">URL ค้นหาบริษัท</label>
+                    <label class="form-label fw-bold" for="company_search_url">URL ค้นหาบริษัท</label>
                   </div>
                   <div class="col-sm-9">
-                    <InputText name="company_search_url" id="company_search_url" class="w-100" />
+                    <InputText v-model="initialValues.company_search_url" name="company_search_url" id="company_search_url" class="w-100" placeholder="ระบุชื่อ URL สำหรับค้นหาบริษัท"/>
                   </div>
                 </div>
               </div>
-
-              <!-- <div class="field mb-3">
-                <div class="row align-items-center">
-                  <div class="col-sm-3">
-                    <label for="verified">ยืนยันบริษัทแล้ว</label>
-                  </div>
-                  <div class="col-sm-9">
-                    <ToggleButton name="verified" onLabel="ใช่" offLabel="ไม่ใช่" onIcon="pi pi-check" offIcon="pi pi-times" />
-                  </div>
-                </div>
-              </div> -->
-
               <div class="d-flex justify-content-end mt-4">
-                <Button type="button" label="ยกเลิก" icon="pi pi-times" class="p-button-text" @click="hideDialog" />
+                <Button type="button" label="ยกเลิก" icon="pi pi-times" class="p-button-text" @click="closeCompanyDialog" />
                 <Button type="submit" label="บันทึก" icon="pi pi-check" class="p-button-text" />
               </div>
             </div>
@@ -278,9 +215,6 @@ import Column from 'primevue/column';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import Dialog from 'primevue/dialog';
-import Dropdown from 'primevue/dropdown';
-import ToggleButton from 'primevue/togglebutton';
-// import Badge from 'primevue/badge';
 import Tag from 'primevue/tag';
 import { FilterMatchMode } from "@primevue/core/api";
 import IconField from 'primevue/iconfield';
@@ -288,7 +222,6 @@ import InputIcon from 'primevue/inputicon';
 import Select from 'primevue/select';
 import { Form } from '@primevue/forms';
 import Message from 'primevue/message';
-
 
 export default {
   name: "TheCompany",
@@ -299,46 +232,46 @@ export default {
     Button,
     InputText,
     Dialog,
-    Dropdown,
-    ToggleButton,
     Tag,
     IconField,
     InputIcon,
     Select,
     Form,
     Message,
-
   },
 
   setup() {
-    // const toast = useToast();
-    // const formRef = ref(null);
-    const companies = ref([]);
+    // ข้อมูลบริษัท
+    const company = ref([]);
+    const companyLoading = ref(false);
+    // ประเภทอุตสาหกรรม
     const industries = ref([]);
+    const industriesLoading = ref(true);
+    // ขนาดบริษัท
     const companySizes = ref([]);
-    const loading = ref(true);
-    const companyDialog = ref(false);
-    const deleteCompanyDialog = ref(false);
-    const companyDetailVisible = ref(false);
-    const selectedCompany = ref(null);
+    const companySizesLoading = ref(true);
     
+    // ตัวเเปรสำหรับ Dialog เปิดเพิ่มข้อมูลบริษัท
+    const companyDialog = ref(false);
+
     // ค่าเริ่มต้นสำหรับฟอร์ม PrimeVue
     const initialValues = ref({
       company_id: null,
-      name: '',
-      short_name: '',
+      name: null,
+      short_name: null,
       industry: null,
       verified: 0,
-      company_search_url: '',
+      company_search_url: null,
       company_size: null,
       registration_date: null
     });
+    const insertCompanySubmitted = ref(false);
     
-    const filters = reactive({
+    const filters = ref({
       global: { value: null, matchMode: FilterMatchMode.CONTAINS },
     });
 
-    // ตัวแปรสำหรับ Notification Dialog (แทน Toast)
+    // ตัวแปรสำหรับ Notification Dialog
     const notificationDialog = reactive({
       visible: false,
       header: '',
@@ -398,45 +331,59 @@ export default {
       }
     };
 
-
     // ฟังก์ชันเรียกข้อมูลบริษัททั้งหมด
-    const fetchCompanies = async () => {
+    const fetchCompany = async () => {
+      companyLoading.value = true;
       try {
-        loading.value = true;
         const response = await axios.get('http://127.0.0.1:8000/company');
         if (response.data.status === 'success') {
-          companies.value = response.data.data;
+          company.value = response.data.data;
+          console.log('ข้อมูลบริษัท:', company.value);
         }
       } catch (error) {
         showNotification('error', 'เกิดข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลบริษัทได้');
-        console.error('Error fetching companies:', error);
+        console.error('ไม่สามารถดึงข้อมูลบริษัทได้:', error);
       } finally {
-        loading.value = false;
+        companyLoading.value = false;
       }
     };
 
     // ฟังก์ชันเรียกข้อมูลอุตสาหกรรม
     const fetchIndustries = async () => {
+      industriesLoading.value = true;
       try {
         const response = await axios.get('http://127.0.0.1:8000/company/industry');
         if (response.data.status === 'success') {
-          industries.value = response.data.data;
+          // industries.value = response.data.data;
+          industries.value = response.data.data.map((item, index) => ({
+            name: item.industry,
+            code: `industry_${index}`
+          }));
           console.log('อุตสาหกรรม:', industries.value);
         }
       } catch (error) {
-        console.error('Error fetching industries:', error);
-      }
+        console.error('ไม่สามารถดึงข้อมูลอุตสาหกรรมได้:', error);
+      } finally {
+        industriesLoading.value = false;
+      } 
     };
 
     // ฟังก์ชันเรียกข้อมูลขนาดบริษัท
     const fetchCompanySizes = async () => {
+      companySizesLoading.value = true;
       try {
         const response = await axios.get('http://127.0.0.1:8000/company/company_size');
         if (response.data.status === 'success') {
-          companySizes.value = response.data.data;
+          companySizes.value = response.data.data.map((item, index) => ({
+            name: item.company_size,
+            code: `company_size_${index}`
+          }));
+          console.log('ขนาดบริษัท:', companySizes.value);
         }
       } catch (error) {
-        console.error('Error fetching company sizes:', error);
+        console.error('ไม่สามารถดุงข้อมูลขนาดบริษัทได้:', error);
+      } finally {
+        companySizesLoading.value = false;
       }
     };
 
@@ -444,126 +391,105 @@ export default {
     const openNewCompany = () => {
       initialValues.value = {
         company_id: null,
-        name: '',
-        short_name: '',
+        name: null,
+        short_name: null,
         industry: null,
         verified: 0,
-        company_search_url: '',
+        company_search_url: null,
         company_size: null,
         registration_date: null
       };
 
-      // รีเซ็ตฟอร์ม
-      // setTimeout(() => {
-      //   formRef.value?.resetValues();
-      // }, 100);
-      
       companyDialog.value = true;
     };
 
-    // ซ่อนไดอะล็อก
-    const hideDialog = () => {
+    // ปิด Company Dialog
+    const closeCompanyDialog = () => {
       companyDialog.value = false;
+      insertCompanySubmitted.value = false;
     };
 
-    // บันทึกข้อมูลบริษัท (ถูกเรียกจาก Form submit)
-    const onFormSubmit = async ({ values, valid }) => {
-      if (!valid) {
-        showNotification(
-            'error', 
-            'ข้อมูลไม่ครบถ้วน', 
-            `กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน`, 
-          );
-        // toast.add({ severity: 'error', summary: 'ข้อมูลไม่ครบถ้วน', detail: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน', life: 3000 });
+    // เพื่มข้อมูลบริษัท
+    const insertCompany = async (event) => {
+      insertCompanySubmitted.value = true;
+      // ตรวจสอบว่าชื่อบริษัทว่างเปล่าหรือไม่
+      if (!initialValues.value.name) {
+        showNotification('warning', 'แจ้งเตือน', 'กรุณากรอกข้อมูลให้ครบ');
         return;
       }
-
       try {
-        // เตรียมข้อมูลสำหรับส่งไป API
-        let companyData = {
+        // เตรียมข้อมูลสำหรับ API
+        const params = {
           "company_id": null,
-          "name": values.name,
-          "short_name": values.short_name || null,
-          "industry": values.industry ? values.industry.industry : null,
-          "verified": values.verified ? 1 : 0,
-          "company_search_url": values.company_search_url || null,
-          "company_size": values.company_size ? values.company_size.company_size : null,
-          "registration_date": values.registration_date || null
+          "name": initialValues.value.name,
+          "short_name": initialValues.value.short_name || null,
+          "industry": initialValues.value.industry ? initialValues.value.industry.industry : null,
+          "verified": initialValues.value.verified ? 1 : 0,
+          "company_search_url": initialValues.value.company_search_url || null,
+          "company_size": initialValues.value.company_size ? initialValues.value.company_size.company_size : null,
+          "registration_date": initialValues.value.registration_date || null
         };
 
-        let response;
+        // ถ้าไม่มี company_id แสดงว่าเป็นการเพิ่มใหม่
+        console.log('Insert company params:', params);
+        const response = await axios.post('http://127.0.0.1:8000/company', params);
+        console.log('Response insert company:', response.data);
         
-        // ถ้ามี company_id แสดงว่าเป็นการแก้ไข
-        if (values.company_id) {
-          companyData.company_id = values.company_id;
-          response = await axios.put(`http://127.0.0.1:8000/company/${values.company_id}`, companyData);
-        } else {
-          // ถ้าไม่มี company_id แสดงว่าเป็นการเพิ่มใหม่
-          console.log('companyData:', companyData);
-          response = await axios.post('http://127.0.0.1:8000/company', companyData);
-          console.log('response:', response.data);
-        }
-
-        // ตรวจสอบผลลัพธ์จาก API
+        // ตรวจสอบการตอบกลับจาก API
         if (response.data.status === 'success') {
-          // แสดงข้อความสำเร็จ
-          showNotification(
-            'success', 
-            'บันทึกสำเร็จ', 
-            `${companyData.company_id ? 'แก้ไข' : 'เพิ่ม'}ข้อมูลบริษัทเรียบร้อยแล้ว`, 
-          );
+          // แสดงการแจ้งเตือนสำเร็จ
+          showNotification('success', 'บันทึกสำเร็จ', 'เพิ่มข้อมูลบริษัทเรียบร้อยแล้ว');
+          insertCompanySubmitted.value = false;
           
           // ซ่อนไดอะล็อก
-          hideDialog();
-          fetchCompanies();
-        } else {
-          showNotification('error', 'เกิดข้อผิดพลาด', response.data.message || 'ไม่สามารถบันทึกข้อมูลได้');
-        }
+          closeCompanyDialog();
+          fetchCompany();
+        } 
       } catch (error) {
-        // จัดการข้อผิดพลาดจาก API
-        console.error('Error saving company:', error);
-        
-        // ตรวจสอบว่ามีข้อความ error จาก API หรือไม่
-        const errorMessage = error.response?.data?.message || 'ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่อีกครั้ง';
-        showNotification('error', 'เกิดข้อผิดพลาด', errorMessage);
-
+        console.error('ไม่สามารถบันทึกข้อมูลได้:', error); 
+        showNotification('error', 'เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้: ' + (error.response?.data?.message || error.message));
       }
     };
 
     onMounted(() => {
-      fetchCompanies();
+      fetchCompany();
       fetchIndustries();
       fetchCompanySizes();
     });
 
     return {
-      // formRef,
-      companies,
+      // ตัวเเปรพารามิเตอร์,
+      company,
+      companyLoading,
       industries,
+      industriesLoading,
       companySizes,
-      loading,
+      companySizesLoading,
       companyDialog,
-      deleteCompanyDialog,
-      companyDetailVisible,
-      selectedCompany,
       initialValues,
+      insertCompanySubmitted,
       filters,
       notificationDialog,
+
+      // ฟังก์ชั่น
       resolver,
       showNotification,
       closeNotification,
-      fetchCompanies,
-      fetchIndustries,
-      fetchCompanySizes,
       openNewCompany,
-      hideDialog,
-      onFormSubmit,
+      closeCompanyDialog,
+      insertCompany,
     };
   }
 };
 </script>
 
 <style scoped>
+.card {
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background-color: white;
+}
+
 .text-success {
   color: #198754;
 }
