@@ -171,7 +171,7 @@
         </div>
       </div>
 
-      <!-- เเสดงเเจ้งเตือน -->
+      <!-- Notification Dialog -->
       <Dialog v-model:visible="notificationDialog.visible" :style="{ width: '350px' }" :header="notificationDialog.header" :modal="true">
         <div class="d-flex align-items-center">
           <i :class="notificationDialog.icon" class="me-2" style="font-size: 1.5rem" />
@@ -237,7 +237,7 @@ export default {
     const jobDetailDialog = ref(false);
     const selectedJob = ref(null);
 
-    // ตัวเเปรสำหรับเเสดงเเจ้งเตือน
+    // ตัวเเปรสำหรับ Notification Dialog
     const notificationDialog = reactive({
       visible: false,
       header: '',
@@ -257,6 +257,7 @@ export default {
             name: item.name,
             code: item.sub_category_id.toString()
           }));
+          console.log('หมวดหมู่ย่อย:', subCategories.value);
         }
       } catch (error) {
         console.error('ไม่สามารถดึงข้อมูลหมวดหมู่ย่อยได้:', error);
@@ -308,7 +309,7 @@ export default {
       searchJobsSubmitted.value = true;
       // ตรวจสอบเงื่อนไขก่อนการค้นหา: ต้องเลือกหมวดหมู่งานและมีทักษะอย่างน้อย 1 สกิล
       if (!selectedSubCategory.value || (selectedHardSkills.value.length === 0 && selectedSoftSkills.value.length === 0)) {
-        showNotification('error', 'แจ้งเตือน', 'กรุณากรอกข้อมูลให้ครบ');
+        showNotification('warning', 'แจ้งเตือน', 'กรุณากรอกข้อมูลให้ครบ');
         return;
       }
       
@@ -328,13 +329,12 @@ export default {
         // เรียก API เพื่อค้นหางานที่เหมาะสม
         const response = await axios.post('http://127.0.0.1:8000/mapping/retrieval', params);
         
-        if (response.data && response.data.status === "success" && response.data.jobs) {
-          jobs.value = response.data.jobs;
+        if (response.data && response.data.status === "success" && response.data.data) {
+          jobs.value = response.data.data;
         } else {
           // กรณีไม่พบข้อมูลหรือมีข้อผิดพลาด
           jobs.value = [];
         }
-        
         console.log('Search response:', response.data);
         
       } catch (error) {
