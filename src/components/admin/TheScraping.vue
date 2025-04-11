@@ -425,7 +425,7 @@ export default {
     // เมื่อกด submit เพื่อดึงข้อมูลงานจาก API
     const fetchData = async () => {
       if (!selectedMainCategory.value || !selectedSubcategory.value) {
-        showNotification('error', 'ข้อผิดพลาด', 'กรุณาเลือกหมวดหมู่หลักและหมวดหมู่ย่อยก่อน');
+        showNotification('warning', 'เเจ้งเตือน', 'กรุณาเลือกหมวดหมู่หลักและหมวดหมู่ย่อยก่อน');
         return;
       }
       isLoading.value = true;
