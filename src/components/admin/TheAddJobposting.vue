@@ -1,8 +1,8 @@
 <!-- src\components\admin\TheAddJobposting.vue -->
-
 <template>
   <div class="container-fluid">
     <div class="row flex-nowrap">
+      <!-- Sidebar -->
       <div class="col-auto col-md-3 col-xl-2 px-sm-2 px-0">
         <TheSidebar />
       </div>
@@ -10,8 +10,10 @@
       <div class="col py-3">
         <h1 class="fw-bold h1 mb-3" style="color: #2A2D65;">เพิ่มประกาศรับสมัครงาน</h1>
 
+        <!-- Image to Text -->
         <div class="card p-4 mb-4">
           <h4 class="mb-3">ดึงข้อความจากรูปภาพ</h4>
+            <!-- เลือกโมเดล -->
             <Select 
                 v-model="selectedImagetotextModel" 
                 name="imagetotextModel" 
@@ -20,7 +22,7 @@
                 placeholder="เลือกโมเดล" 
                 class="mb-3 w-30"
             />
-
+            <!-- Upload รูปภาพ -->
             <FileUpload 
                 name="files" 
                 :customUpload="true"
@@ -36,129 +38,280 @@
             </FileUpload>
         </div>
     
-        <Form @submit="onFormSubmit">
+        <Form @submit="insertJobposting">
           <div class="card p-4 mb-4">
             <h4 class="mb-3">ข้อมูลพื้นฐาน</h4>
-            
             <div class="row mb-3">
               <div class="col-md-12" >
-                <label class="form-label">ตำแหน่งงาน<span class="text-danger">*</span></label>
+                <label class="form-label">
+                  <span v-if="insertJobpostingSubmitted && !jobtitle" class="fw-bold text-danger">ตำแหน่งงาน (จำเป็นต้องระบุ)</span>
+                  <span v-else>ตำแหน่งงาน<span class="text-danger">*</span></span>
+                </label>
                 <div>
-                  <InputText v-model="jobtitle" name="jobtitle" class="w-100" type="text" placeholder="ระบุตำแหน่งงาน" required/>
+                  <InputText 
+                    v-model="jobtitle" 
+                    name="jobtitle" 
+                    class="w-100" 
+                    type="text" 
+                    placeholder="ระบุตำแหน่งงาน"
+                    :invalid="insertJobpostingSubmitted && !jobtitle"  
+                  />
                 </div>
-                
               </div>
             </div>
             
             <div class="row mb-3">
               <div class="col-md-6">
-                <label class="form-label">หมวดหมู่หลัก<span class="text-danger">*</span></label>
-                <Select v-model="selectedMaincategory" name="selectedMaincategory" :options="maincategory" optionLabel="name" 
-                  placeholder="เลือกหมวดหมู่หลัก" class="w-100" required/>
+                <label class="form-label">
+                  <span v-if="insertJobpostingSubmitted && !selectedMaincategory" class="fw-bold text-danger">หมวดหมู่หลัก (จำเป็นต้องระบุ)</span>
+                  <span v-else>หมวดหมู่หลัก<span class="text-danger">*</span></span>
+                </label>
+                <Select 
+                  v-model="selectedMaincategory" 
+                  name="selectedMaincategory" 
+                  :options="mainCategories" 
+                  optionLabel="name" 
+                  placeholder="เลือกหมวดหมู่หลัก" 
+                  class="w-100"
+                  :invalid="insertJobpostingSubmitted && !selectedMaincategory" 
+                />
               </div>
               <div class="col-md-6">
-                <label class="form-label">หมวดหมู่ย่อย<span class="text-danger">*</span></label>
-                <Select v-model="selectedSubcategory" filter name="selectedSubcategory" :options="subcategory" optionLabel="name" 
-                  placeholder="เลือกหมวดหมู่ย่อย" class="w-100" required/>
+                <label class="form-label">
+                  <span v-if="insertJobpostingSubmitted && !selectedSubcategory" class="fw-bold text-danger">หมวดหมู่ย่อย (จำเป็นต้องระบุ)</span>
+                  <span v-else>หมวดหมู่ย่อย<span class="text-danger">*</span></span>
+                </label>                
+                <Select 
+                  v-model="selectedSubcategory" 
+                  filter 
+                  name="selectedSubcategory" 
+                  :options="subCategories" 
+                  optionLabel="name" 
+                  placeholder="เลือกหมวดหมู่ย่อย" 
+                  class="w-100" 
+                  :invalid="insertJobpostingSubmitted && !selectedSubcategory" 
+                />
               </div>
             </div>
-            
+        
             <div class="row mb-3">
               <div class="col-md-12">
-                <label class="form-label">รายละเอียดงาน<span class="text-danger">*</span></label>
-                <Textarea v-model="jobcontent" name="jobcontent" class="w-100" rows="5" placeholder="ระบุรายละเอียดงาน" required/>
+                <label class="form-label">
+                  <span v-if="insertJobpostingSubmitted && !jobcontent" class="fw-bold text-danger">รายละเอียดงาน (จำเป็นต้องระบุ)</span>
+                  <span v-else>รายละเอียดงาน<span class="text-danger">*</span></span>
+                </label>                  
+                <Textarea 
+                  v-model="jobcontent" 
+                  name="jobcontent" 
+                  class="w-100" 
+                  rows="5" 
+                  placeholder="ระบุรายละเอียดงาน"
+                  :invalid="insertJobpostingSubmitted && !jobcontent"  
+                />
               </div>
             </div>
             
             <div class="row mb-3">
               <div class="col-md-12">
                 <label class="form-label">แหล่งที่มา</label>
-                <InputText v-model="jobshareLink" name="jobshareLink" class="w-100" type="text" placeholder="ระบุแหล่งที่มาหรือลิงก์"/>
+                <InputText 
+                  v-model="jobshareLink" 
+                  name="jobshareLink" 
+                  class="w-100" 
+                  type="text" 
+                  placeholder="ระบุแหล่งที่มาหรือลิงก์"
+                />
               </div>
             </div>
-            
+   
             <div class="row mb-3">
               <div class="col-md-6">
-                <label class="form-label">วันที่ประกาศรับสมัคร<span class="text-danger">*</span></label>
-                <DatePicker v-model="postedDate" name="postedDate" showIcon class="w-100" :showOnFocus="false" inputId="postedDate" required />
+                <label class="form-label">
+                  <span v-if="insertJobpostingSubmitted && !postedDate" class="fw-bold text-danger">วันที่ประกาศรับสมัคร (จำเป็นต้องระบุ)</span>
+                  <span v-else>วันที่ประกาศรับสมัคร<span class="text-danger">*</span></span>
+                </label> 
+                <DatePicker 
+                  v-model="postedDate" 
+                  name="postedDate" 
+                  showIcon 
+                  class="w-100" 
+                  :showOnFocus="false" 
+                  inputId="postedDate"  
+                  :invalid="insertJobpostingSubmitted && !postedDate"
+                  placeholder="เดือน/วัน/ปี" 
+                />
               </div>
               <div class="col-md-6">
-                <label class="form-label">วันที่ปิดรับสมัคร<span class="text-danger">*</span></label>
-                <DatePicker v-model="expiryDate" name="expiryDate" showIcon class="w-100" :showOnFocus="false" inputId="expiryDate" required />
+                <label class="form-label">
+                  <span v-if="insertJobpostingSubmitted && !expiryDate" class="fw-bold text-danger">วันที่ปิดรับสมัคร (จำเป็นต้องระบุ)</span>
+                  <span v-else>วันที่ปิดรับสมัคร<span class="text-danger">*</span></span>
+                </label> 
+                <DatePicker 
+                  v-model="expiryDate" 
+                  name="expiryDate" 
+                  showIcon 
+                  class="w-100" 
+                  :showOnFocus="false" 
+                  inputId="expiryDate"  
+                  :invalid="insertJobpostingSubmitted && !expiryDate"
+                  placeholder="เดือน/วัน/ปี"
+                />
               </div>
             </div>
             
             <div class="row mb-3">
               <div class="col-md-12">
-                <label class="form-label">บริษัท<span class="text-danger">*</span></label>
-                <Select v-model="selectedCompany" name="selectedCompany" :options="companies" filter optionLabel="name" 
-                  placeholder="เลือกบริษัท" :virtualScrollerOptions="{ itemSize: 38 }" class="w-100" required/>
+                <label class="form-label">
+                  <span v-if="insertJobpostingSubmitted && !selectedCompany" class="fw-bold text-danger">บริษัท (จำเป็นต้องระบุ)</span>
+                  <span v-else>บริษัท<span class="text-danger">*</span></span>
+                </label>
+                <Select 
+                  v-model="selectedCompany" 
+                  name="selectedCompany" 
+                  :options="company" 
+                  filter 
+                  optionLabel="name" 
+                  placeholder="เลือกบริษัท" 
+                  :virtualScrollerOptions="{ itemSize: 38 }" class="w-100" 
+                  :invalid="insertJobpostingSubmitted && !selectedCompany"
+                />
               </div>
             </div>
           </div>
           
           <div class="card p-4 mb-4">
             <h4 class="mb-3">สถานที่ทำงาน</h4>
-            
             <div class="row mb-3">
               <div class="col-md-4">
                 <label class="form-label">พื้นที่ทำงาน</label>
-                <AutoComplete v-model="selectedArea" name="selectedArea" :suggestions="filteredAreas" 
-                  @complete="searchArea" @focus="onFocus" optionLabel="area"
-                  class="w-100" :dropdown="true" :forceSelection="false"/>
+                <AutoComplete 
+                  v-model="selectedArea" 
+                  name="selectedArea" 
+                  :suggestions="filteredAreas" 
+                  @complete="searchArea" 
+                  @focus="onFocus" 
+                  optionLabel="area"
+                  class="w-100" 
+                  :dropdown="true" 
+                  :forceSelection="false"
+                  placeholder="ระบุพื้นที่ทำงาน"
+                />
               </div>
               <div class="col-md-4">
                 <label class="form-label">เมือง</label>
-                <AutoComplete v-model="selectedCity" name="selectedCity" :suggestions="filteredCitys" 
-                  @complete="searchCity" @focus="onFocus" optionLabel="city"
-                  class="w-100" :dropdown="true" :forceSelection="false"/>
+                <AutoComplete 
+                  v-model="selectedCity" 
+                  name="selectedCity" 
+                  :suggestions="filteredCitys" 
+                  @complete="searchCity" 
+                  @focus="onFocus" 
+                  optionLabel="city"
+                  class="w-100" 
+                  :dropdown="true" 
+                  :forceSelection="false"
+                  placeholder="ระบุเมือง"
+                />
               </div>
               <div class="col-md-4">
                 <label class="form-label">ประเทศ</label>
-                <AutoComplete v-model="selectedCountry" name="selectedCountry" :suggestions="filteredCountry" 
-                  @complete="searchCountry" @focus="onFocus" optionLabel="country"
-                  class="w-100" :dropdown="true" :forceSelection="false"/>
+                <AutoComplete 
+                  v-model="selectedCountry" 
+                  name="selectedCountry" 
+                  :suggestions="filteredCountry" 
+                  @complete="searchCountry" 
+                  @focus="onFocus" 
+                  optionLabel="country"
+                  class="w-100" 
+                  :dropdown="true" 
+                  :forceSelection="false"
+                  placeholder="ระบุประเทศ"
+                />
               </div>
             </div>
           </div>
           
           <div class="card p-4 mb-4">
             <h4 class="mb-3">ข้อมูลเงินเดือนและการจ้างงาน</h4>
-            
             <div class="row mb-3">
               <div class="col-md-4">
-                <label class="form-label">สกุลเงิน<span class="text-danger">*</span></label>
-                <Select v-model="selectedCurrency" name="selectedCurrency" :options="currency" optionLabel="currency" 
-                  placeholder="เลือกสกุลเงิน" class="w-100" required/>
+                <label class="form-label">
+                  <span v-if="insertJobpostingSubmitted && !selectedCurrency" class="fw-bold text-danger">สกุลเงิน (จำเป็นต้องระบุ)</span>
+                  <span v-else>สกุลเงิน<span class="text-danger">*</span></span>
+                </label>
+                <Select 
+                  v-model="selectedCurrency" 
+                  name="selectedCurrency" 
+                  :options="currency" 
+                  optionLabel="currency" 
+                  placeholder="ระบุสกุลเงิน" 
+                  class="w-100" 
+                  :invalid="insertJobpostingSubmitted && !selectedCurrency"
+                />
               </div>
               <div class="col-md-4">
-                <label class="form-label">เงินเดือนต่ำสุด<span class="text-danger">*</span></label>
-                <InputNumber v-model="min_salary" name="min_salary" class="w-100" placeholder="ระบุเงินเดือนต่ำสุด" required/>
+                <label class="form-label">
+                  <span v-if="insertJobpostingSubmitted && !min_salary" class="fw-bold text-danger">เงินเดือนต่ำสุด (จำเป็นต้องระบุ)</span>
+                  <span v-else>เงินเดือนต่ำสุด<span class="text-danger">*</span></span>
+                </label>
+                <InputNumber 
+                  v-model="min_salary" 
+                  name="min_salary" 
+                  class="w-100" 
+                  placeholder="ระบุเงินเดือนต่ำสุด"
+                  :invalid="insertJobpostingSubmitted && !min_salary" 
+                />
               </div>
               <div class="col-md-4">
-                <label class="form-label">เงินเดือนสูงสุด<span class="text-danger">*</span></label>
-                <InputNumber v-model="max_salary" name="max_salary" class="w-100" placeholder="ระบุเงินเดือนสูงสุด" required/>
+                <label class="form-label">
+                  <span v-if="insertJobpostingSubmitted && !max_salary" class="fw-bold text-danger">เงินเดือนสูงสุด (จำเป็นต้องระบุ)</span>
+                  <span v-else>เงินเดือนสูงสุด<span class="text-danger">*</span></span>
+                </label>
+                <InputNumber 
+                  v-model="max_salary" 
+                  name="max_salary" 
+                  class="w-100" 
+                  placeholder="ระบุเงินเดือนสูงสุด" 
+                  :invalid="insertJobpostingSubmitted && !max_salary" 
+                />
               </div>
             </div>
             
             <div class="row mb-3">
               <div class="col-md-4">
-                <label class="form-label">งวดการจ่าย<span class="text-danger">*</span></label>
-                <Select v-model="selectedPeriod" name="selectedPeriod" :options="period" optionLabel="period" 
-                  placeholder="เลือกงวดการจ่าย" class="w-100" required/>
+                <label class="form-label">
+                  <span v-if="insertJobpostingSubmitted && !selectedPeriod" class="fw-bold text-danger">งวดการจ่าย (จำเป็นต้องระบุ)</span>
+                  <span v-else>งวดการจ่าย<span class="text-danger">*</span></span>
+                </label>          
+                <Select 
+                  v-model="selectedPeriod" 
+                  name="selectedPeriod" 
+                  :options="period" 
+                  optionLabel="period" 
+                  placeholder="ระบุงวดการจ่าย" 
+                  class="w-100"
+                  :invalid="insertJobpostingSubmitted && !selectedPeriod"  
+                />
               </div>
               <div class="col-md-4">
-                <label class="form-label">ประเภทสัญญาจ้าง<span class="text-danger">*</span></label>
-                <Select v-model="selectedJobType" name="selectedJobType" :options="jobtypes" optionLabel="type" 
-                  placeholder="เลือกประเภทสัญญาจ้าง" class="w-100" required/>
+                <label class="form-label">
+                  <span v-if="insertJobpostingSubmitted && !selectedJobType" class="fw-bold text-danger">ประเภทสัญญาจ้าง (จำเป็นต้องระบุ)</span>
+                  <span v-else>ประเภทสัญญาจ้าง<span class="text-danger">*</span></span>
+                </label>  
+                <Select 
+                  v-model="selectedJobType" 
+                  name="selectedJobType" 
+                  :options="jobtypes" 
+                  optionLabel="name" 
+                  placeholder="ระบุประเภทสัญญาจ้าง" 
+                  class="w-100" 
+                  :invalid="insertJobpostingSubmitted && !selectedJobType"
+                />
               </div>
             </div>
-          </div>
-        
+          </div>  
           <div class="d-flex justify-content-end mt-4">
             <Button :loading="loading" type="submit" label="บันทึก" class="p-button-success" icon="pi pi-save" />
           </div>
-          
         </Form>
       </div>
 
@@ -223,7 +376,8 @@ export default {
     const jobshareLink = ref(null); // แหล่งที่มา
     const postedDate = ref(null); // วันที่เปิดรับสมัครงาน
     const expiryDate = ref(null); // วันที่ปิดรับสมัครงาน
-    const companies = ref([]); // บริษัท
+    const company = ref([]); // บริษัท
+    const companyLoading = ref(false);
     const selectedCompany = ref(null);
     const isActive = ref(true); // สถานะประกาศ
 
@@ -254,12 +408,19 @@ export default {
     const max_salary = ref(null); 
     const min_salary = ref(null); 
 
-    // ประเภทงาน
-    const subcategory = ref([]);
+    // ข้อมูลหมวดหมู่ย่อย (Sub-categories)
+    const subCategories = ref([]);
     const selectedSubcategory = ref(null);
-
-    const maincategory = ref([]);
+    const subCategoriesLoading = ref(false);
+    
+    // ข้อมูลหมวดหมู่หลัก (Main-categories)
+    const mainCategories = ref([]);
     const selectedMaincategory = ref(null);
+    const maincategoryLoading = ref(null);
+
+    // 
+    const insertJobpostingLoading = ref(null);
+    const insertJobpostingSubmitted = ref(false);
 
     // ตัวแปรสำหรับ Notification Dialog
     const notificationDialog = reactive({
@@ -306,35 +467,49 @@ export default {
     const loading = ref(false);
     
 
-    const onFormSubmit = async (event) => {
+    const insertJobposting = async (event) => {
+      insertJobpostingSubmitted.value = true;
+      
+      // ตรวจสอบข้อมูลพื้นฐาน
+      if (
+        !jobtitle.value || 
+        !selectedMaincategory.value || !selectedSubcategory.value || 
+        !jobcontent.value || 
+        !postedDate.value || !expiryDate.value ||
+        !selectedCompany.value ||
+        !selectedCurrency.value || !min_salary.value || !max_salary.value ||
+        !selectedPeriod.value || !selectedJobType.value
+        ){
+        showNotification('warning', 'เเจ้งเตือน', 'กรุณากรอกข้อมูลให้ครบ');
+        return
+      } 
+      insertJobpostingLoading.value = true;    
       try {
-        loading.value = true;
-
         // เตรียมข้อมูลสำหรับส่งไปยัง API
         const formData = {
           basicInfo: {
             title: jobtitle.value,
-            type: selectedJobType.value ? selectedJobType.value.type : null,
-            status: isActive.value ? "Active" : "Inactive",
+            type: selectedJobType.value.name,
+            status: isActive.value ? 'Active' : 'Expired',
             postedDate: postedDate.value,
             expiryDate: expiryDate.value
           },
           salary: {
             min_salary: min_salary.value,
             max_salary: max_salary.value,
-            currency: selectedCurrency.value ? selectedCurrency.value.currency : "THB",
-            period: selectedPeriod.value ? selectedPeriod.value.period : "monthly",
+            currency: selectedCurrency.value.currency,
+            period: selectedPeriod.value.period,
             has_salary_info: !!(min_salary.value && max_salary.value)
           },
           classification: {
-            mainCategory: selectedMaincategory.value ? {
-              id: selectedMaincategory.value.main_category_id,
+            mainCategories: {
+              id: selectedMaincategory.value.code,
               name: selectedMaincategory.value.name
-            } : null,
-            subCategory: selectedSubcategory.value ? {
-              id: selectedSubcategory.value.sub_category_id,
+            },
+            subCategories: {
+              id: selectedSubcategory.value.code,
               name: selectedSubcategory.value.name
-            } : null
+            },
           },
           location: {
             // รองรับทั้งกรณีเลือกจากรายการที่มีอยู่ และพิมพ์ข้อมูลใหม่เอง
@@ -342,10 +517,10 @@ export default {
             city: selectedCity.value?.city ?? selectedCity.value ?? null,
             country: selectedCountry.value?.country ?? selectedCountry.value ?? null
           },
-          company: selectedCompany.value ? {
-            id: selectedCompany.value.company_id,
+          company: {
+            id: selectedCompany.value.code,
             name: selectedCompany.value.name
-          } : null,
+          },
           content: jobcontent.value,
           shareLink: jobshareLink.value
         };
@@ -354,15 +529,17 @@ export default {
 
         const response = await axios.post('http://127.0.0.1:8000/jobs/jobpostings', formData);
         if (response.data.status === 'success') {
-          showNotification('success', 'สำเร็จ', 'บันทึกข้อมูลเรียบร้อยแล้ว');
-          // อาจจะเพิ่มการล้างฟอร์มหลังจากบันทึกสำเร็จ
+          let job_id = response.data.data.job_id;
+          showNotification('success', 'สำเร็จ', 'บันทึกข้อมูลเรียบร้อยแล้ว รหัสประกาศรับสมัครงาน: ' + job_id);
+          // เพิ่มการล้างฟอร์มหลังจากบันทึกสำเร็จ
           resetForm();
+          insertJobpostingSubmitted.value = false;
         }
       } catch (error) {
-        console.error('Error creating job posting:', error);
+        console.error('ไม่สามารถบันทึกข้อมูลได้:', error);
         showNotification('error', 'เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้: ' + (error.response?.data?.message || error.message));
       } finally {
-        loading.value = false;
+        insertJobpostingLoading.value = false;
       }
     };
 
@@ -428,12 +605,15 @@ export default {
       try {
         loading.value = true;
         const response = await axios.get('http://127.0.0.1:8000/basicinfo/type');
-        if (response.data.status === 'success') {
-          jobtypes.value = response.data.data;
-          console.log('jobtypes:', jobtypes.value);
+        if (response.data && response.data.data &&  response.data.status === 'success') {
+          jobtypes.value = response.data.data.map((item, index) => ({
+            name: item.type,
+            code: `type_${index}`
+          }));
+          console.log('ประเภทสัญญาจ้าง:', jobtypes.value);
         }
       } catch (error) {
-        console.error('Error fetching jobtypes:', error);
+        console.error('ไม่สามารถดึงข้อมูลประเภทสัญญาจ้างได้:', error);
       } finally {
         loading.value = false;
       }
@@ -444,12 +624,15 @@ export default {
       try {
         loading.value = true;
         const response = await axios.get('http://127.0.0.1:8000/location/area');
-        if (response.data.status === 'success') {
-          area.value = response.data.data;
-          console.log('area:', area.value);
+        if (response.data && response.data.data && response.data.status === 'success') {
+          area.value = response.data.data.map((item, index) => ({
+            area: item.area,
+            code: `area_${index}`
+          }));
+          console.log('ข้อมูลพื้นที่ทำงาน:', area.value);
         }
       } catch (error) {
-        console.error('Error fetching area:', error);
+        console.error('ไมสามารถดึงข้อมูลพื้นที่ทำงานได้:', error);
       } finally {
         loading.value = false;
       }
@@ -459,7 +642,7 @@ export default {
       try {
         loading.value = true;
         const response = await axios.get('http://127.0.0.1:8000/location/city');
-        if (response.data.status === 'success') {
+        if (response.data && response.data.data && response.data.status === 'success') {
           city.value = response.data.data;
           console.log('city:', city.value);
         }
@@ -474,7 +657,7 @@ export default {
       try {
         loading.value = true;
         const response = await axios.get('http://127.0.0.1:8000/location/country');
-        if (response.data.status === 'success') {
+        if (response.data && response.data.data && response.data.status === 'success') {
           country.value = response.data.data;
           console.log('country:', country.value);
         }
@@ -490,7 +673,7 @@ export default {
       try {
         loading.value = true;
         const response = await axios.get('http://127.0.0.1:8000/salary/currency');
-        if (response.data.status === 'success') {
+        if (response.data && response.data.data && response.data.status === 'success') {
           currency.value = response.data.data;
           console.log('currency:', currency.value);
         }
@@ -505,7 +688,7 @@ export default {
       try {
         loading.value = true;
         const response = await axios.get('http://127.0.0.1:8000/salary/period');
-        if (response.data.status === 'success') {
+        if (response.data && response.data.data &&  response.data.status === 'success') {
           period.value = response.data.data;
           console.log('period:', period.value);
         }
@@ -516,48 +699,65 @@ export default {
       }
     };
 
-    const fetchCompanies = async () => {
+    // ฟังก์ชันดึงข้อมูลบริษัท
+    const fetchCompany = async () => {
+      companyLoading.value = true;
       try {
-        loading.value = true;
         const response = await axios.get('http://127.0.0.1:8000/company');
-        if (response.data.status === 'success') {
-          companies.value = response.data.data;
-          console.log('companies:', companies.value);
+        if (response.data && response.data.data && response.data.status === 'success') {
+          // แปลงข้อมูลให้ตรงกับรูปแบบที่ต้องการ
+          company.value = response.data.data.map(item => ({
+            name: item.name,
+            code: item.company_id.toString()
+          }));
+          console.log('ข้อมูลบริษัท:', company.value);
         }
       } catch (error) {
-        console.error('Error fetching companies:', error);
+        showNotification('error', 'เกิดข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลบริษัทได้');
+        console.error('ไม่สามารถดึงข้อมูลบริษัทได้:', error);
       } finally {
-        loading.value = false;
+        companyLoading.value = false;
       }
     };
 
-    const fetchMaincategory = async () => {
+    // ฟังก์ชันดึงข้อมูลหมวดหมู่หลักจาก API
+    const fetchMainCategories = async () => {
+      maincategoryLoading.value = true;
       try {
         loading.value = true;
         const response = await axios.get('http://127.0.0.1:8000/maincategory');
-        if (response.data.status === 'success') {
-          maincategory.value = response.data.data;
-          console.log('maincategory:', maincategory.value);
+        if (response.data && response.data.data && response.data && response.data.status === "success" && response.data.data) {
+          // แปลงข้อมูลให้ตรงกับรูปแบบที่ต้องการ
+          mainCategories.value = response.data.data.map(item => ({
+            name: item.name,
+            code: item.main_category_id.toString()
+          }));
+          console.log('หมวดหมู่หลัก:', mainCategories.value);
         }
       } catch (error) {
-        console.error('Error fetching maincategory:', error);
+        console.error('ไม่สามารถดึงข้อมูลหมวดหมู่หลักได้:', error);
       } finally {
-        loading.value = false;
+        maincategoryLoading.value = false;
       }
     };
 
-    const fetchSubcategory = async () => {
-      try {
-        loading.value = true;
+    // ฟังก์ชันดึงข้อมูลหมวดหมู่ย่อยจาก API
+    const fetchSubCategories = async () => {
+      subCategoriesLoading.value = true;
+      try {       
         const response = await axios.get('http://127.0.0.1:8000/subcategory');
-        if (response.data.status === 'success') {
-          subcategory.value = response.data.data;
-          console.log('subcategory:', subcategory.value);
+        if (response.data && response.data.status === "success" && response.data.data) {
+          // แปลงข้อมูลให้ตรงกับรูปแบบที่ต้องการ
+          subCategories.value = response.data.data.map(item => ({
+            name: item.name,
+            code: item.sub_category_id.toString()
+          }));
+          console.log('หมวดหมู่ย่อย:', subCategories.value);
         }
       } catch (error) {
-        console.error('Error fetching subcategory:', error);
+        console.error('ไม่สามารถดึงข้อมูลหมวดหมู่ย่อยได้:', error);
       } finally {
-        loading.value = false;
+        subCategoriesLoading.value = false;
       }
     };
 
@@ -614,7 +814,7 @@ export default {
           if (extractedData.salary?.min_salary) min_salary.value = parseFloat(extractedData.salary.min_salary);
           if (extractedData.salary?.max_salary) max_salary.value = parseFloat(extractedData.salary.max_salary);
           
-          // ข้อมูลสถานที่ - เขียนแบบสั้นตามที่คุณต้องการ
+          // ข้อมูลสถานที่
           if (extractedData.location?.area) selectedArea.value = area.value.find(a => a.area.toLowerCase() === extractedData.location.area.toLowerCase()) || extractedData.location.area;
           if (extractedData.location?.city) selectedCity.value = city.value.find(c => c.city.toLowerCase() === extractedData.location.city.toLowerCase()) || extractedData.location.city;
           if (extractedData.location?.country) selectedCountry.value = country.value.find(c => c.country.toLowerCase() === extractedData.location.country.toLowerCase()) || extractedData.location.country;
@@ -643,9 +843,9 @@ export default {
       fetchCountry();
       fetchCurrency();
       fetchPeriod();
-      fetchCompanies();
-      fetchMaincategory();
-      fetchSubcategory();
+      fetchCompany();
+      fetchMainCategories();
+      fetchSubCategories();
     });
 
     return {
@@ -655,14 +855,14 @@ export default {
       jobshareLink,
       postedDate,
       expiryDate,
-      companies,
+      company,
       selectedCompany,
       isActive,
 
       // ประเภทงาน
-      subcategory,
+      subCategories,
       selectedSubcategory,
-      maincategory,
+      mainCategories,
       selectedMaincategory,
 
       // ข้อมูลการจ้างงาน
@@ -703,9 +903,11 @@ export default {
       loading,
 
       // ฟังก์ชั่นส่งค่าจากฟอร์มเพื่อบันทึกข้อมูล
-      onFormSubmit,
+      insertJobposting,
+      insertJobpostingLoading,
+      insertJobpostingSubmitted,
       resetForm,
-
+      
       // ฟังก์ชั่นค้นหาข้อมูล 
       searchArea,
       searchCity,
@@ -719,9 +921,9 @@ export default {
       fetchCountry,
       fetchCurrency,
       fetchPeriod,
-      fetchCompanies,
-      fetchMaincategory,
-      fetchSubcategory,
+      fetchCompany,
+      fetchMainCategories,
+      fetchSubCategories,
 
       // ตัวแปรสำหรับ Upload รูปภาพ
       selectedImagetotextModel,
