@@ -1,29 +1,102 @@
-# frontend
+# SkillMap Client: ระบบวิเคราะห์แนวโน้มอาชีพและจับคู่ทักษะ
 
-This template should help get you started developing with Vue 3 in Vite.
+![Vue.js](https://img.shields.io/badge/Vue.js-4FC08D?style=flat&logo=vue.js&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-23.4.0-339933?style=flat&logo=node.js&logoColor=white)
+![PrimeVue](https://img.shields.io/badge/PrimeVue-4393CA?style=flat&logo=prime&logoColor=white)
+![Bootstrap](https://img.shields.io/badge/Bootstrap-7952B3?style=flat&logo=bootstrap&logoColor=white)
+![Axios](https://img.shields.io/badge/Axios-5A29E4?style=flat&logo=axios&logoColor=white)
+![Looker Studio](https://img.shields.io/badge/Looker_Studio-0078D4?style=flat&logo=google&logoColor=white)
 
-## Recommended IDE Setup
+## เกี่ยวกับโปรเจค
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+SkillMap Client เป็นส่วน Frontend ของระบบ [SkillMap Server](https://github.com/peerapoljantimee/skillmap-server) ที่พัฒนาขึ้นเพื่อสร้างแพลตฟอร์มอัจฉริยะสำหรับการวิเคราะห์ตลาดแรงงาน พร้อมระบบจับคู่ทักษะที่เชื่อมโยงความสามารถของผู้ใช้กับตำแหน่งงานที่เหมาะสม เพื่อเพิ่มโอกาสในการพัฒนาอาชีพด้านเทคโนโลยีสารสนเทศและการสื่อสารอย่างตรงจุด
 
-## Customize configuration
+## คุณสมบัติหลัก
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+- **Dashboard:** แสดงแนวโน้มตลาดงานและทักษะที่เป็นที่ต้องการในปัจจุบัน
+- **Skill Matching:** ระบบจับคู่ทักษะกับหมวดหมู่และตำแหน่งงานที่เหมาะสม
+- **ค้นหาตำแหน่งงาน:** ค้นหาและกรองตำแหน่งงานจากฐานข้อมูลที่รวบรวมไว้
+- **นำเข้าข้อมูล:** รองรับการนำเข้าข้อมูลจากโปสเตอร์ประกาศรับสมัครงาน
+- **รายงานและการวิเคราะห์:** แสดงรายงานเชิงลึกเกี่ยวกับทักษะและตำแหน่งงาน
+- **ส่วนจัดการข้อมูล:** สำหรับผู้ดูแลระบบในการจัดการข้อมูลพื้นฐาน
 
-## Project Setup
+## ความต้องการของระบบ
 
-```sh
+- Node.js 23.4.0 หรือสูงกว่า
+- npm หรือ yarn
+- เชื่อมต่อกับ [SkillMap Server](https://github.com/peerapoljantimee/skillmap-server) สำหรับ API
+
+## การติดตั้ง
+
+### ขั้นตอนที่ 1: โคลนโปรเจค
+
+```bash
+git clone https://github.com/peerapoljantimee/skillmap-client.git
+cd skillmap-client
+```
+
+### ขั้นตอนที่ 2: ติดตั้ง Dependencies
+
+```bash
 npm install
 ```
 
-### Compile and Hot-Reload for Development
+## การเริ่มต้นใช้งาน
 
-```sh
+### เริ่มต้นในโหมด Development
+
+```bash
 npm run dev
 ```
 
-### Compile and Minify for Production
+### สร้าง Production Build
 
-```sh
+```bash
 npm run build
 ```
+
+### รัน Production Preview
+
+```bash
+npm run preview
+```
+
+## โครงสร้างโปรเจค
+
+โปรเจคนี้ใช้โครงสร้างแบบ Vue.js Component-Based Architecture
+
+```
+skillmap-client/
+├── index.html               # HTML entry point
+├── jsconfig.json            # JavaScript configuration
+├── package.json             # Node.js dependencies
+├── public/                  # Static assets
+│   └── favicon.ico
+├── src/
+│   ├── App.vue              # Main Vue component
+│   ├── assets/              # Images, fonts, and styles
+│   ├── components/          # Vue components
+│   │   ├── admin/           # Components for admin features
+│   │   ├── auth/            # Authentication components
+│   │   ├── common/          # Shared/common components
+│   │   ├── icons/           # Icon components
+│   │   ├── jobMatching/     # Job matching feature components
+│   │   └── layout/          # Layout components
+│   ├── main.js              # JavaScript entry point
+│   └── router/              # Vue Router configuration
+│       └── index.js
+└── vite.config.js           # Vite configuration
+```
+
+## เทคโนโลยีหลัก
+
+- **Vue.js:** JavaScript framework สำหรับสร้าง UI
+- **Vue Router:** จัดการการนำทางในแอปพลิเคชัน
+- **PrimeVue:** UI Component Library สำหรับ Vue.js
+- **Bootstrap:** CSS framework สำหรับ responsive design
+- **Axios:** Library สำหรับการทำ HTTP requests
+- **Vite:** Build tool ที่รวดเร็วสำหรับ frontend development
+
+## การเชื่อมต่อกับ Backend
+
+SkillMap Client ใช้ Axios เพื่อเชื่อมต่อกับ [SkillMap Server](https://github.com/peerapoljantimee/skillmap-server) API. การกำหนดค่า API base URL
