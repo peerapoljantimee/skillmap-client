@@ -103,4 +103,4 @@ SkillMap Client ใช้ Axios เพื่อเชื่อมต่อกั
 
 
 # Infographic Poster
-![infographic](.\img\วิเคราะห์แนวโน้มอาชีพและการจับคู่ทักษะ.png)
+![infographic](img/วิเคราะห์แนวโน้มอาชีพและการจับคู่ทักษะ.png)
