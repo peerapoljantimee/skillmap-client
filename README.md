@@ -100,3 +100,7 @@ skillmap-client/
 ## การเชื่อมต่อกับ Backend
 
 SkillMap Client ใช้ Axios เพื่อเชื่อมต่อกับ [SkillMap Server](https://github.com/peerapoljantimee/skillmap-server) API. การกำหนดค่า API base URL
+
+
+# Infographic Poster
+![infographic](img\วิเคราะห์แนวโน้มอาชีพและการจับคู่ทักษะ.png)
